@@ -66,8 +66,9 @@ int getword(char* w) {
                                 continue;
                         } else if (c == TILDE) {
                                 state = IN;
-                                strcpy(w,getenv("HOME"));
-                                letters = strlen(getenv("HOME"));
+                                char *env = getenv("HOME");
+                                strcpy(w,env);
+                                letters = strlen(env);
                                 state = IN;
                                 continue;                             
                         } else { 
