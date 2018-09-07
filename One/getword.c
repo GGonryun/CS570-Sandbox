@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-
+#include <stdlib.h>
 
 #define EOS '\0'
 //Delimiters
@@ -19,8 +19,8 @@
 #define PUSH '>'
 #define PIPE '|'
 #define WAIT '&'
-#define TILDE '~'
 
+#define TILDE '~'
 #define MONEY '$'
 #define BREAK '\\'
 
@@ -71,6 +71,12 @@
                                 state = IN;
                                 multiplier *= -1;
                                 continue;
+                        } else if (c == TILDE) {
+                                state = IN;
+                                strcpy(w,getenv("HOME"));
+                                letters = strlen(getenv("HOME"));
+                                state = IN;
+                                continue;                             
                         } else { 
                                 state = IN;
                         }

@@ -6,6 +6,6 @@
 int main() {
         char src[] = "hello;! ";
         char *env = getenv("HOME");
-        strcat(src, getenv("HOME"));
-        printf("%s", src);
+        strcat(src, env);
+        printf("%s && %d \n", src, strlen(env));
 }
