@@ -5,10 +5,12 @@
  *  getword.c
  */
 
+#include "getword.h"
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+
 
 #define EOS '\0'
 //Delimiters
@@ -33,7 +35,7 @@
         int letters = 0; //total letters in word.
         int state = OUT; //storing state.
         int multiplier = 1; //used to determine if '$' was used.
-        while(letters < 255) {
+        while(letters < STORAGE) {
                 c = getchar();
 
                 if(state == OUT){
