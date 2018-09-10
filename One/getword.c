@@ -31,11 +31,13 @@
 int getword(char* w) {
 
         int c;                  //character from getchar() is stored in here.
-        int letters = 0;        //total letters in word.
-        int state = OUT;        //storing state.
-        int multiplier = 1;     //used to determine if '$' was used.
-        
-        while(letters < STORAGE) {
+        short letters = 0;        //total letters in word.
+        unsigned short state = OUT;        //storing state.
+        signed short multiplier = 1;     //used to determine if '$' was used.
+        int g;        
+        char *env = getenv("HOME");
+
+        while(letters < STORAGE-1) {
                 c = getchar();
 
                 if(state == OUT){
@@ -57,7 +59,7 @@ int getword(char* w) {
                                         w[letters++] = c;
                                         break;
                                 } else {
-                                        ungetc(c,stdin);
+                                        g = ungetc(c,stdin);
                                         break;
                                 }
                         } else if (c == MONEY) {
@@ -66,9 +68,8 @@ int getword(char* w) {
                                 continue;
                         } else if (c == TILDE) {
                                 state = IN;
-                                char *env = getenv("HOME");
                                 strcpy(w,env);
-                                letters = strlen(env);
+                                letters = (short)strlen(env);
                                 state = IN;
                                 continue;                             
                         } else { 
@@ -80,10 +81,11 @@ int getword(char* w) {
                         if(c == BLANK) {
                                 break;
                         } else if (c == EOF || c == SEMI || c == NEWLINE || c == PUSH || c == PULL || c == PIPE || c == WAIT) {
-                                ungetc(c,stdin);
+                                g = ungetc(c,stdin);
                                 break;
                         } else if (c == BREAK) {
-                                c = getchar();                               
+                                c = getchar();
+                                if(c == NEWLINE) continue;                                
                         }
                         w[letters++] = c;
                 }
