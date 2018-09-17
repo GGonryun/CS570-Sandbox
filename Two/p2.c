@@ -1,66 +1,62 @@
-int parse();
-void prompt();
-void build_array(char * a[]);
-void empty_array(char * a[]);
+/*
+ *
+ *
+ *
+ *
+ *
+ */
 
+/* INCLUDES & DEPENDANCIES */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include "getword.h"
 
+/* DEFINITIONS */
 #define MAX 10
 #define LENGTH 255
 #define TRUE 1
 #define FALSE 0
 
-char *command[MAX]; //to be executed.
-/* global flags */
+/* ASCI DECLARATIONS */
+int user_input();
+int parse();
+int execute(int *kp);
+void build_array(char * a[]);
+void empty_array(char * a[]);
+
+/* GLOBAL FLAGS */
+char *command[MAX]; 
 int f_wait;
-
-
 
 int main() 
 {
-        (void) build_array(command);
-        (void) shell_ui();
-        (void) empty_array(command);
-}
-
-
-int shell_ui() {
-        int l;
+        int length;
         int kidpid;
-
+        int kidstatus;
+        (void) build_array(command);
         for(;;) {
                 /* reset global flags */
                 f_wait = FALSE;
                 kidpid = 0;
-               
+
                 /* preparing user input for execution */
-                prompt(); l = parse();
-                if(0 >= l)      
+                length = user_input();
+                if(0 >= length)
                         continue;
                 if(EOF == *command[0])
                         break;
-                
-                /* executing command */        
-                if(-1 == (kidpid = (int)fork())) {      //fork process.
-                        exit(1);                        //cannot fork.
-                } else if ( 0 == kidpid) {              //in child. 
-                        (void) sleep(2);
-                        exit(0);
-                } else {                                //in parent.
-                        printf("parent is locked out.\n");
-                        for(;f_wait>0;) {                       //waiting for child process.
-                                pid_t pid;
-                                pid = wait(NULL);
-                                if(pid == kidpid)
-                                        break;
-                        }
-                        printf("parent is ready now. \n");
-                }
+
+                /* executing command */
+                kidstatus = execute(&kidpid);
         }
+        (void) empty_array(command);
+}
+
+int user_input() {
+        printf(":cs570: ");
+        return parse();
 }
 
 int parse() 
@@ -84,8 +80,28 @@ int parse()
 }
 
 
-void prompt() {
-        printf(":cs570: ");
+int execute(int *kp)
+{
+        int status = 0;
+        int failure = 0;
+                                        //Create a fork ::
+        if(-1 == (*kp = (int)fork())) { //:: the fork has failed.
+                exit(1);
+        } else if ( 0 == *kp) {         //:: execute the command as child.
+                //(void) sleep(2); //<-- add this for testing child delays.
+                failure = execvp(command[0],command);
+                if(failure) {
+                        printf("Execvp failed: %d. \"%s\" is not a command!\n",
+                               failure,command[0]); 
+                } else 
+                        exit(0);
+        } else {                        //:: wait for child to execute as parent.
+                pid_t pid;              //if & flag is there, we do not wait.
+                for(; (0 == f_wait) && (pid != *kp); pid = wait(&status));
+
+                return status;
+        }
+
 }
 
 void build_array(char *a[]) {
