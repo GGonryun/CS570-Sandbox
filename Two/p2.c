@@ -11,36 +11,44 @@ void empty_array(char * a[]);
 #define MAX 10
 #define LENGTH 255
 
-char *line[MAX];
-
+char *command[MAX]; //to be executed.
+int terminate = 0;
 int main() 
 {
-        (void) build_array(line);
-        for(;;) {
-                prompt();
-                int i, j;
-                for(i = 0, j = parse(); i < j ; i++)
-                        printf("%s ", line[i]);
-                printf("\n");       
-        }
-        (void) empty_array(line);
+        (void) build_array(command);
+        (void) shell_ui();
+        (void) empty_array(command);
 }
 
+
+int shell_ui() {
+        int l;
+        for(;;) {
+                prompt(); l = parse();
+                /* preparing user input for execution */
+                if(l <= 0)      
+                        continue;
+                if(*command[0] == EOF)
+                        break;
+        }
+}
 
 int parse() 
 {
         int i;
         int l;
-        for(i = 0; l = getword(line[i]); i++) {
-                if(l==0) break;
-                if((strcmp(line[i],"<<")) == 0) printf("double pull\n"); 
+        for(i = 0; l = getword(command[i]); i++) {
+                if(l==0) 
+                        break;                 // reached the end of command.
+                if(l==-255)
+                        *command[i] = EOF;
         }
         return i;
 }
 
 
 void prompt() {
-        printf(":cs570 :");
+        printf(":cs570: ");
 }
 
 void build_array(char *a[]) {
