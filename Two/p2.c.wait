@@ -1,0 +1,65 @@
+int parse();
+void prompt();
+void build_array(char * a[]);
+void empty_array(char * a[]);
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "getword.h"
+
+#define MAX 10
+#define LENGTH 255
+
+char *command[MAX]; //to be executed.
+int main() 
+{
+        (void) build_array(command);
+        for(;;) {
+                prompt(); parse();
+                int i, j;  
+        }
+        (void) empty_array(command);
+}
+
+
+int shell_ui() {
+        int l;                  //total words in command.
+        for(;;) {               //loop infinitely.
+                prompt(); 
+                l = parse();
+                if(l <= 0)      //command is empty
+                        continue;
+                if(command[0] == )
+        }
+}
+
+int parse() 
+{
+        int i;
+        int l;
+        for(i = 0; l = getword(line[i]); i++) {
+                if(l==0) break;                 // reached the end of command.
+                if((strcmp(line[i],"<<")) == 0) 
+                        printf("double pull\n"); 
+        }
+        return i;
+}
+
+
+void prompt() {
+        printf(":cs570: ");
+}
+
+void build_array(char *a[]) {
+        int i;
+        for(i = 0; i < MAX; i++)
+                a[i] = (char *) malloc (LENGTH*sizeof(char));
+}
+
+void empty_array(char * a[]) {
+        int i;
+        for(i = 0; i < MAX; i++)
+                free(a[i]);
+}
+
