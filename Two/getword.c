@@ -1,7 +1,7 @@
-/*  Miguel Campos
- *  Dr. John Carroll
- *  CS570
- *  8/31
+/*  M***l C***s
+ *  Dr. J***n C***l
+ *  CS***
+ *  **/**/18
  *  getword.c
  */
 

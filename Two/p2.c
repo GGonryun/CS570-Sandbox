@@ -1,11 +1,9 @@
-/*
- *
- *
- *
- *
- *
+/*  M****l C****s
+ *  Dr. J**n C*****l
+ *  CS***
+ *  **/**/18
+ *  p2.c
  */
-
 /* INCLUDES & DEPENDANCIES */
 #include <stdio.h>
 #include <stdlib.h>
