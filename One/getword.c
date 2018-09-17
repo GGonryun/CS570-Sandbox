@@ -30,12 +30,11 @@
 
 int getword(char* w) {
 
-        int c;                  //character from getchar() is stored in here.
-        short letters = 0;        //total letters in word.
-        unsigned short state = OUT;        //storing state.
-        signed short multiplier = 1;     //used to determine if '$' was used.
-        int g;        
-        char *env = getenv("HOME");
+        short c;                 //character from getchar() is stored in here.
+        short letters = 0;              //total letters in word.
+        unsigned short state = OUT;     //storing state.
+        signed short multiplier = 1;    //used to determine if '$' was used.
+        char *env = getenv("HOME");     //gets current home directory.
 
         while(letters < STORAGE-1) {
                 c = getchar();
@@ -59,7 +58,7 @@ int getword(char* w) {
                                         w[letters++] = c;
                                         break;
                                 } else {
-                                        g = ungetc(c,stdin);
+                                        ungetc(c,stdin);
                                         break;
                                 }
                         } else if (c == MONEY) {
@@ -81,7 +80,7 @@ int getword(char* w) {
                         if(c == BLANK) {
                                 break;
                         } else if (c == EOF || c == SEMI || c == NEWLINE || c == PUSH || c == PULL || c == PIPE || c == WAIT) {
-                                g = ungetc(c,stdin);
+                                ungetc(c,stdin);
                                 break;
                         } else if (c == BREAK) {
                                 c = getchar();

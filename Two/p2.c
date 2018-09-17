@@ -1,31 +1,29 @@
 int parse();
 
 #include <stdio.h>
+#include <string.h>
 #include "getword.h"
 
-char words[100];
+#define MAX 10
+#define LENGTH 255
 
-int main() {
-        int c;
-        int total_words;
+char line[MAX][LENGTH];
 
-        for(;;) {
-        printf(":570 :");
-        total_words = parse();
-        }       
+int main() 
+{
+        int i, j;
+        for(i = 0, j = parse(); i < j ; i++)
+                printf("%s\n", line[i]);       
 }
 
-int parse() {
-        int i = 0;
-        int c;
-        char word[255];
-        for(;;) {
-                c = getword(word);
-                words[i++] = word;
+
+int parse() 
+{
+        int i;
+        int l;
+        for(i = 0; l = getword(line[i]); i++) {
+                if(l==0) break;
+                if((strcmp(line[i],"<<")) == 0) printf("double pull\n"); 
         }
-        words[i] = NULL;
-        return 0;
-                
-        
+        return i;
 }
-

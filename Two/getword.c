@@ -28,7 +28,7 @@
 #define IN 1
 #define OUT 0
 
-int getword(char* w) {
+int getword(char * w) {
 
         short c;                 //character from getchar() is stored in here.
         short letters = 0;              //total letters in word.
