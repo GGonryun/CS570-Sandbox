@@ -1,116 +1,107 @@
-/*  M****l C****s
- *  Dr. J**n C*****l
- *  CS###
- *  ##/##/18
- *  p2.c
- */
-/* INCLUDES & DEPENDANCIES */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include "getword.h"
+#include "p2.h"
 
-/* DEFINITIONS */
-#define MAX 10
-#define LENGTH 255
-#define TRUE 1
-#define FALSE 0
-
-/* ASCI DECLARATIONS */
-int user_input();
-int parse();
-int execute(int *kp);
-void build_array(char * a[]);
-void empty_array(char * a[]);
-
-/* GLOBAL FLAGS */
-char *command[MAX]; 
+/* GLOBAL BOIS */
+int f_terminate;
+int f_push;
+int f_pull;
+int f_pipe;
 int f_wait;
 
-int main() 
-{
-        int length;
-        int kidpid;
-        int kidstatus;
-        (void) build_array(command);
-        for(;;) {
-                /* reset global flags */
-                f_wait = FALSE;
-                kidpid = 0;
+/* CHARACTER AND STRING STORAGE */
+char *line[MAX_ARGS];
+char tmp[MAX_ARGS][STORAGE];
+char push_file[STORAGE];
+char pull_file[STORAGE];
 
-                /* preparing user input for execution */
-                length = user_input();
-                if(0 >= length)
-                        continue;
-                if(EOF == *command[0])
-                        break;
+int main() {
 
-                /* executing command */
-                kidstatus = execute(&kidpid);
-        }
-        (void) empty_array(command);
-}
+        prepare();        
 
-int user_input() {
-        printf(":cs570: ");
-        return parse();
-}
-
-int parse() 
-{
+        int max = parse();
         int i;
-        int l;
-        for(i = 0; l = getword(command[i]); i++) {
-                
-                /* terminating command */
-                if(0 == l) 
-                        break;                
-                else if(-255 == l) {
-                        *command[i] = EOF;
-                        break;
+        
+        for(i = 0;i < max;i++) {
+                printf("index: %d, word: %s\n",i,line[i]);
+        }
+        if(f_pull) {
+                (void) redirectinput();
+                printf("pullfile specified: %s\n",pull_file);
+        }
+        if(f_push) { 
+                (void) redirectoutput();
+                printf("pushfile specified: %s\n",push_file); 
+        }
+        if(f_wait) {
+                printf("we're waiting!\n");
+        }
+}
+
+int parse() {
+        int i, j, l;
+        for(i = 0, j = 0 ; (l = getword(tmp[i])) ; i++) {
+                if(l == -255) { 
+                        f_terminate = TRUE; break;
+                } else if (strcmp(tmp[i], ">") == 0) {
+                        f_push = TRUE;
+                        getword(push_file);
+                } else if (strcmp(tmp[i], "<") == 0) {
+                        f_pull = TRUE;
+                        getword(pull_file);
+                } else if (strcmp(tmp[i], "|") == 0) {
+                        f_pipe = TRUE;
+                } else {
+                        line[j++] = tmp[i];
                 }
-                /* activating global flags for execution */
-                if(0 == strcmp(command[i],"&")) 
-                        f_wait++;
         }
-        return i;
+        if(strcmp(line[j-1], "&") == 0) {
+                f_wait = TRUE;
+                j--;
+        } 
+        line[j] == NULL;
+        return j;
 }
 
+void redirectoutput() {
+        int out;
+        int flags = (O_WRONLY | O_CREAT | O_TRUNC);
+        int permissions = (S_IRUSR | S_IWUSR);
+        if((out = open(push_file, flags, permissions)) < 0) {
+                perror("unable to open file");
+                exit(1);                  
+        } 
+        if(dup2(out, STDOUT_FILENO) < 0) {
+                perror("unable to set file descriptor");
+                exit(2);
+        }
+        if(close(out) < 0) {
+                perror("unable to close file descriptor");
+                exit(3);
+        }
+}
 
-int execute(int *kp)
-{
-        int status = 0;
-        int failure = 0;
-                                        //Create a fork ::
-        if(-1 == (*kp = (int)fork())) { //:: the fork has failed.
+void redirectinput() {
+        int in;
+        int flags = (O_RDONLY);
+        if((in = open(pull_file, flags)) < 0) {
+                perror("unable to open file");
                 exit(1);
-        } else if ( 0 == *kp) {         //:: execute the command as child.
-                //(void) sleep(2); //<-- add this for testing child delays.
-                failure = execvp(command[0],command);
-                if(failure) {
-                        printf("Execvp failed: %d. \"%s\" is not a command!\n",
-                               failure,command[0]); 
-                } else 
-                        exit(0);
-        } else {                        //:: wait for child to execute as parent.
-                pid_t pid;              //if & flag is there, we do not wait.
-                for(; (0 == f_wait) && (pid != *kp); pid = wait(&status));
-
-                return status;
+        }
+        if(dup2(in, STDIN_FILENO) < 0) {
+                perror("unable to set file descriptor");
+                exit(2);
+        }
+        if(close(in) < 0) {
+                perror("unable to close file descriptor");
+                exit(3);
         }
 
 }
 
-void build_array(char *a[]) {
-        int i;
-        for(i = 0; i < MAX; i++)
-                a[i] = (char *) malloc (LENGTH*sizeof(char));
-}
-
-void empty_array(char * a[]) {
-        int i;
-        for(i = 0; i < MAX; i++)
-                free(a[i]);
+void prepare() {
+        f_terminate = FALSE;
+        f_push = FALSE;
+        f_pull = FALSE;
+        f_pipe = FALSE;
+        f_wait = FALSE;
 }
 
