@@ -24,16 +24,16 @@ int main() {
                 printf("index: %d, word: %s\n",i,line[i]);
         }
         if(f_pull) {
-                (void) redirectinput();
                 printf("pullfile specified: %s\n",pull_file);
         }
         if(f_push) { 
-                (void) redirectoutput();
                 printf("pushfile specified: %s\n",push_file); 
         }
         if(f_wait) {
                 printf("we're waiting!\n");
         }
+        redirectinput();
+        redirectoutput();
 }
 
 int parse() {
@@ -62,6 +62,9 @@ int parse() {
 }
 
 void redirectoutput() {
+        if(!f_push) {
+                return;
+        }
         int out;
         int flags = (O_WRONLY | O_CREAT | O_TRUNC);
         int permissions = (S_IRUSR | S_IWUSR);
@@ -80,6 +83,10 @@ void redirectoutput() {
 }
 
 void redirectinput() {
+        if(!f_pull) {
+                if(f_wait)      strcpy(pull_file,"/dev/null");
+                else            return;
+        }
         int in;
         int flags = (O_RDONLY);
         if((in = open(pull_file, flags)) < 0) {
