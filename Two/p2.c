@@ -19,6 +19,14 @@ char c_dir[STORAGE];
 
 int main() {
         //TRY TO HANDLE CATCHING KILL SIGNAL
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_handler = donothing;
+        if(sigaction(SIGTERM, &sa, NULL) == -1) {
+                perror("sigterm problems");
+                exit(1);
+        }
+        
         for(;;) {
                 prepare();
                 pid_t childpid;
@@ -50,30 +58,27 @@ int main() {
 
                         redirectinput();
                         redirectoutput();
-                      /* == IN CHILD ==
-                        int i;
-                        printf("child says:\n");
-                        for(i = 0; i < max; i++) {
-                                sleep(1);
-                                printf("index: %d, word %s\n", i, line[i]);
-                        }
-                        if(f_pull) {
-                                printf("pullfile specified: %s\n", pull_file);
-                        }
-                        if(f_push) {
-                                printf("pushfile specified: %s\n", push_file);
-                        }
-                      */
+
                         if(execvp(line[0],line) == -1) {
                                 perror("execvp failed!");
                                 exit(1);
                         }
+                        if(f_wait) {
+                                printf("child [%d] done\n", getpid());
+                        }
                         exit(0);
                 } else {
                         pid_t pid;
-                        for(;!(f_wait) && (childpid != pid);pid = wait(NULL));                        
+                        if(!f_wait)
+                                for(; (childpid != pid);pid = wait(NULL));
+                        else
+                                printf("child [%d]\n", childpid);
+                                
                 }
         }
+        killpg(getpgrp(),SIGTERM);
+        printf("\np2 terminated.\n");
+        exit(0);
 }
 
 int parse() {
@@ -86,15 +91,26 @@ int parse() {
                 } else if (l < 0) 
                         strcpy(tmp[i],getenv(tmp[i]));
 
+                if(TRUE == f_push) {
+                        f_push++;
+                        strcpy(push_file, tmp[i]);
+                        continue;
+                } else if (TRUE == f_pull) {
+                        f_pull++;
+                        strcpy(pull_file, tmp[i]);
+                        continue;
+                } else if (TRUE == f_pipe) {
+                        f_pipe++;
+                        strcpy(pipe_comm, tmp[i]);
+                        continue;
+                }
+
                 if (strcmp(tmp[i], ">") == 0) {
                         f_push = TRUE;
-                        getword(push_file);
                 } else if (strcmp(tmp[i], "<") == 0) {
                         f_pull = TRUE;
-                        getword(pull_file);
                 } else if (strcmp(tmp[i], "|") == 0) {
                         f_pipe = TRUE;
-                        getword(pipe_comm);
                 } else {
                         line[j++] = tmp[i];
                 }
@@ -167,3 +183,6 @@ void prepare() {
         f_wait = FALSE;
 }
 
+void donothing(int signum) {
+
+}
