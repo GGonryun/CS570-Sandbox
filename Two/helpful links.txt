@@ -23,6 +23,9 @@ getting ready to handle pgid(): http://man7.org/linux/man-pages/man2/setpgid.2.h
 
 understanding getenv: http://www0.cs.ucl.ac.uk/staff/ucacbbl/getenv/
 
+
+preparing multipiping: https://stackoverflow.com/questions/17630247/coding-multiple-pipe-in-c/17631589
+
 derailed to add fancy funtionality:
 further understanding of pointers: https://stackoverflow.com/questions/6639256/pointer-to-first-element-in-array-c
 how to fetch current working directory: https://stackoverflow.com/questions/6639256/pointer-to-first-element-in-array-c
