@@ -1,30 +1,39 @@
-how to handle pointers & string literals: https://wiki.sei.cmu.edu/confluence/display/c/STR05-C.+Use+pointers+to+const+when+referring+to+string+literals
-exit function: https://stackoverflow.com/questions/2425167/use-of-exit-function
+Most Useful: 
+1) http://www.cs.loyola.edu/~jglenn/702/S2005/Examples/dup2.html
+2) https://robots.thoughtbot.com/input-output-redirection-in-the-shell
 
-this class (pipe & dup & more): http://www.cs.loyola.edu/~jglenn/702/S2005/Examples/dup2.html
 
-how to use close(): http://pubs.opengroup.org/onlinepubs/009696899/functions/close.html
+pointers & stuff:
+1) https://wiki.sei.cmu.edu/confluence/display/c/STR05-C.+Use+pointers+to+const+when+referring+to+string+literals
+2) https://www.geeksforgeeks.org/few-bytes-on-null-pointer-in-c/
+
+exit(): 
+1) https://stackoverflow.com/questions/2425167/use-of-exit-function
+
+close(): 
+1) http://pubs.opengroup.org/onlinepubs/009696899/functions/close.html
 
 i still dont know wtf is fflush is for, i didnt use it: https://www.tutorialspoint.com/c_standard_library/c_function_fflush.htm
 
-good code: https://stackoverflow.com/questions/14846768/in-c-how-do-i-redirect-stdout-fileno-to-dev-null-using-dup2-and-then-redirect
+dup2(): 
+1) https://stackoverflow.com/questions/14846768/in-c-how-do-i-redirect-stdout-fileno-to-dev-null-using-dup2-and-then-redirect
+2) https://linux.die.net/man/2/dup2
 
-more dup2: https://linux.die.net/man/2/dup2
+pipe():
+1) https://linux.die.net/man/2/pipe
+2) https://www.tldp.org/LDP/lpg/node11.html
 
-more pipes: https://linux.die.net/man/2/pipe
+pgid(), sigterm, killpg(), sigaction():
+1) http://man7.org/linux/man-pages/man2/setpgid.2.html
+2) ftp://ftp.gnu.org/old-gnu/Manuals/glibc-2.2.3/html_chapter/libc_24.html
+3) http://man7.org/linux/man-pages/man2/sigaction.2.html
+4) https://www.mkssoftware.com/docs/man3/setpgid.3.asp
 
-even more pipes: https://www.tldp.org/LDP/lpg/node11.html
+getenv():
+1) http://www0.cs.ucl.ac.uk/staff/ucacbbl/getenv/
 
-understanding the null pointer: https://www.geeksforgeeks.org/few-bytes-on-null-pointer-in-c/
-
-this guys shell is a lot like ours: https://robots.thoughtbot.com/input-output-redirection-in-the-shell
-
-getting ready to handle pgid(): http://man7.org/linux/man-pages/man2/setpgid.2.html
-
-understanding getenv: http://www0.cs.ucl.ac.uk/staff/ucacbbl/getenv/
-
-
-preparing multipiping: https://stackoverflow.com/questions/17630247/coding-multiple-pipe-in-c/17631589
+multipiping():
+1) https://stackoverflow.com/questions/17630247/coding-multiple-pipe-in-c/17631589
 
 derailed to add fancy funtionality:
 further understanding of pointers: https://stackoverflow.com/questions/6639256/pointer-to-first-element-in-array-c
