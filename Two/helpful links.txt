@@ -20,3 +20,9 @@ understanding the null pointer: https://www.geeksforgeeks.org/few-bytes-on-null-
 this guys shell is a lot like ours: https://robots.thoughtbot.com/input-output-redirection-in-the-shell
 
 getting ready to handle pgid(): http://man7.org/linux/man-pages/man2/setpgid.2.html
+
+understanding getenv: http://www0.cs.ucl.ac.uk/staff/ucacbbl/getenv/
+
+derailed to add fancy funtionality:
+further understanding of pointers: https://stackoverflow.com/questions/6639256/pointer-to-first-element-in-array-c
+how to fetch current working directory: https://stackoverflow.com/questions/6639256/pointer-to-first-element-in-array-c
