@@ -6,6 +6,7 @@ int f_push;
 int f_pull;
 int f_pipe;
 int f_wait;
+int f_cdir;
 
 /* === CHARACTER AND STRING STORAGE === */
 char *line[MAX_ARGS];
@@ -13,19 +14,33 @@ char tmp[MAX_ARGS][STORAGE];
 char push_file[STORAGE];
 char pull_file[STORAGE];
 char pipe_comm[STORAGE];
+char c_dir[STORAGE];
 
 
 int main() {
+        //TRY TO HANDLE CATCHING KILL SIGNAL
         for(;;) {
                 prepare();
                 pid_t childpid;
-                int max;
+                int max, i;
                         
-                printf(":570: "); max = parse();
+                //displaying tail of current working directory path in prompt
+                for(getcwd(c_dir,sizeof(c_dir)),i = strlen(c_dir) - 1; c_dir[i] != '/'; i--);                 
+                printf("%s:570: ", &(c_dir[++i])); 
+
+                max = parse();
 
                 /* ==== PREPROCESSING CHECKS ==== */
                 if(f_terminate) break;
                 if(max < 1) continue;
+                
+                /* === HANDLING BUILTINS ==== */
+                                
+                if(strcmp(line[0],"cd") == 0) {
+                        if(max == 1) line[1] = getenv("HOME");
+                        if(chdir(line[1]) == -1) perror("did not change directory: ");           
+                        continue;
+                }
 
                 /* ==== EXECUTING CHILDREN ==== */
                 if(-1 == (childpid = fork())) {
@@ -35,7 +50,7 @@ int main() {
 
                         redirectinput();
                         redirectoutput();
-                      /* == INCHILD ==
+                      /* == IN CHILD ==
                         int i;
                         printf("child says:\n");
                         for(i = 0; i < max; i++) {
@@ -56,10 +71,7 @@ int main() {
                         exit(0);
                 } else {
                         pid_t pid;
-                        for(;!(f_wait) && (childpid != pid);pid = wait(NULL));
-                                
-                        //printf("parent says: we are done waiting for child\n");
-                        
+                        for(;!(f_wait) && (childpid != pid);pid = wait(NULL));                        
                 }
         }
 }
@@ -71,7 +83,10 @@ int parse() {
                         if(0 == j)  
                                 f_terminate = TRUE; 
                         break;
-                } else if (strcmp(tmp[i], ">") == 0) {
+                } else if (l < 0) 
+                        strcpy(tmp[i],getenv(tmp[i]));
+
+                if (strcmp(tmp[i], ">") == 0) {
                         f_push = TRUE;
                         getword(push_file);
                 } else if (strcmp(tmp[i], "<") == 0) {
@@ -85,9 +100,11 @@ int parse() {
                 }
         
         }        
-        if(j > 0 && strcmp(line[j-1], "&") == 0) {
-                f_wait = TRUE;
-                j--;
+        if(j > 0) {
+                if( strcmp(line[j-1], "&") == 0) {
+                        f_wait = TRUE;
+                        j--;
+                }
         } 
         line[j] = NULL;
         return j;
@@ -137,6 +154,12 @@ void redirectinput() {
 }
 
 void prepare() {
+        int i;
+        char cwd[STORAGE];
+        getcwd(cwd,sizeof(cwd));
+
+        for(i = strlen(cwd) -1; cwd[i] != '/'; i--);
+        
         f_terminate = FALSE;
         f_push = FALSE;
         f_pull = FALSE;
