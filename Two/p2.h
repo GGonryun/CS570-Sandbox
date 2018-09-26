@@ -9,7 +9,6 @@
 
 #define MAX_ARGS 100
 #define MAX_FILE 100
-#define TRUE 1
 #define FALSE 0
 
 int parse();

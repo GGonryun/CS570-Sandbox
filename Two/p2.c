@@ -7,6 +7,7 @@ int f_pull;
 int f_pipe;
 int f_wait;
 int f_cdir;
+int nextline;
 
 /* === CHARACTER AND STRING STORAGE === */
 char *line[MAX_ARGS];
@@ -16,26 +17,23 @@ char pull_file[STORAGE];
 char pipe_comm[STORAGE];
 char c_dir[STORAGE];
 
-
 int main() {
-        //TRY TO HANDLE CATCHING KILL SIGNAL
+        /* === Catch Signal === */
         struct sigaction sa;
         memset(&sa, 0, sizeof(sa));
         sa.sa_handler = donothing;
         if(sigaction(SIGTERM, &sa, NULL) == -1) {
                 perror("sigterm problems");
                 exit(1);
-        }
-        
+        }        
+        /* === Shell === */
         for(;;) {
-                prepare();
                 pid_t childpid;
-                int max, i;
-                        
-                //displaying tail of current working directory path in prompt
-                for(getcwd(c_dir,sizeof(c_dir)),i = strlen(c_dir) - 1; c_dir[i] != '/'; i--);                 
-                printf("%s:570: ", &(c_dir[++i])); 
-
+                int max;
+                
+                prepare();
+                printf(":cs570: "); fflush(stdout);
+                                        
                 max = parse();
 
                 /* ==== PREPROCESSING CHECKS ==== */
@@ -43,7 +41,6 @@ int main() {
                 if(max < 1) continue;
                 
                 /* === HANDLING BUILTINS ==== */
-                                
                 if(strcmp(line[0],"cd") == 0) {
                         if(max == 1) line[1] = getenv("HOME");
                         if(chdir(line[1]) == -1) perror("did not change directory: ");           
@@ -55,11 +52,49 @@ int main() {
                         perror("unable to create child");
                         exit(1);
                 } else if( 0 == childpid) {
-
+                        
                         redirectinput();
                         redirectoutput();
+                        
+                        // CREATING A PIPE HERE AND STUFF
+                        if(f_pipe > 0) {
+                                int pfd[2];
+                                int grandchildpid;
+                                if((pipe(pfd)) == -1) {
+                                        perror("unable to create pipe!");
+                                        exit(10);
+                                }
+                                
+                                if(-1 == (grandchildpid = fork())) {
+                                        perror("unable to create child");
+                                        exit(1);
+                                } 
+                                
+                                if(grandchildpid == 0) {
+                                        
+                                        //Redirecting output to pfd[1]: Parent Process.
+                                        close(pfd[0]);
+                                        dup2(pfd[1],STDOUT_FILENO);
+                                        close(pfd[1]);
+                                        if((execvp(line[0],line)) == -1) {
+                                                perror("execvp failed!");
+                                                exit(1);
+                                        }
+                                        exit(0);
+                                } else {
+                                        //Reading from pfd[0]: Grandchild Process.
+                                        close(pfd[1]);
+                                        dup2(pfd[0],STDIN_FILENO);
+                                        close(pfd[0]);
 
-                        if(execvp(line[0],line) == -1) {
+                                        pid_t pid;
+                                        for(;grandchildpid != pid;pid = wait(NULL));
+                                }
+                        }
+                        
+                        // ^ THIS SHOULD TURN INTO A FUNCTION
+
+                        if(execvp(line[nextline],line+nextline) == -1) {
                                 perror("execvp failed!");
                                 exit(1);
                         }
@@ -77,67 +112,93 @@ int main() {
                 }
         }
         killpg(getpgrp(),SIGTERM);
+
         printf("\np2 terminated.\n");
         exit(0);
 }
 
 int parse() {
         int i, j, l;
+        int check = 0;
         for(i = 0, j = 0 ; (l = getword(tmp[i])) ; i++) {
+        /* Checking for terminating signal */
                 if(l == -255) {
                         if(0 == j)  
-                                f_terminate = TRUE; 
+                                f_terminate++; 
                         break;
-                } else if (l < 0) 
-                        strcpy(tmp[i],getenv(tmp[i]));
-
-                if(TRUE == f_push) {
-                        f_push++;
+                } 
+        /* Checking for environment variables */
+                if (l < 0) {
+                        char *env;
+                        if((env = getenv(tmp[i])) == NULL)
+                                strcpy(tmp[i],"Env not found");
+                        else 
+                                strcpy(tmp[i],env);
+                }
+        /* Catching flags from previous word. */ 
+                if(check && f_push > 0) {
+                        check--;
                         strcpy(push_file, tmp[i]);
                         continue;
-                } else if (TRUE == f_pull) {
-                        f_pull++;
+                } else if (check && f_pull > 0) {
+                        check--;
                         strcpy(pull_file, tmp[i]);
                         continue;
-                } else if (TRUE == f_pipe) {
-                        f_pipe++;
-                        strcpy(pipe_comm, tmp[i]);
-                        continue;
                 }
-
+        /* Set flags for the next word or store current word. */
                 if (strcmp(tmp[i], ">") == 0) {
-                        f_push = TRUE;
+                        f_push++;
+                        check++;
                 } else if (strcmp(tmp[i], "<") == 0) {
-                        f_pull = TRUE;
+                        f_pull++;
+                        check++;
                 } else if (strcmp(tmp[i], "|") == 0) {
-                        f_pipe = TRUE;
+                        f_pipe++;
+                        line[j++] = NULL; 
+                        nextline = j; //location of the next command.
                 } else {
                         line[j++] = tmp[i];
                 }
         
         }        
+        /* Preparing flags for waiting "&" */
         if(j > 0) {
                 if( strcmp(line[j-1], "&") == 0) {
-                        f_wait = TRUE;
+                        f_wait++;
                         j--;
                 }
         } 
+        /* End of argument */
         line[j] = NULL;
-        return j;
+        return j; // return total line length.
 }
 
 void redirectoutput() {
+        int out, flags, permissions;        
+
+    /* No need to redirect output if no redirection flag was caught */
+    /* Too many pushes will result in an error */
         if(!f_push) {
                 return;
+        } else if (f_push > 1) {
+                perror("redirected output too many times!");
         }
-        int out;
-        int flags = (O_WRONLY | O_CREAT | O_TRUNC);
-        int permissions = (S_IRUSR | S_IWUSR);
+
+    /* If the file already exists don't write over it just leave it alone and throw */
+    /* away your output otherwise, go ahead and write to the file that we've found. */
+        if(!access(push_file, F_OK)) {
+                strcpy(push_file, "/dev/null");
+                flags = (O_WRONLY);
+        } else {
+                flags = (O_WRONLY | O_CREAT | O_TRUNC);
+        }
+        permissions = (S_IRUSR | S_IWUSR);
+    /* Redirecting all our output into the file we opened up. */ 
         if((out = open(push_file, flags, permissions)) < 0) {
                 perror("unable to open file");
                 exit(1);                  
         } 
-        if(dup2(out, STDOUT_FILENO) < 0) {
+        if(dup2(out, STDOUT_FILENO) < 0) { 
                 perror("unable to set file descriptor");
                 exit(2);
         }
@@ -146,12 +207,17 @@ void redirectoutput() {
                 exit(3);
         }
 }
-
 void redirectinput() {
+    /* Background processes without input specified require */
+    /* having their  input redirected to null. */
         if(!f_pull) {
-                if(f_wait)      strcpy(pull_file,"/dev/null");
-                else            return;
-        }        
+                if(f_wait) 
+                        strcpy(pull_file,"/dev/null");
+                else            
+                        return;
+        }
+    /* Access the file as read only for input, this also */
+    /* helps prevent accidentally modifying a file. */     
         int in;
         int flags = (O_RDONLY);
         if((in = open(pull_file, flags)) == -1) {
@@ -166,21 +232,17 @@ void redirectinput() {
                 perror("unable to close file descriptor");
                 exit(3);
         }
-
 }
 
-void prepare() {
-        int i;
-        char cwd[STORAGE];
-        getcwd(cwd,sizeof(cwd));
 
-        for(i = strlen(cwd) -1; cwd[i] != '/'; i--);
-        
+/* Initializing the shell & next line. */
+void prepare() {
         f_terminate = FALSE;
         f_push = FALSE;
         f_pull = FALSE;
         f_pipe = FALSE;
         f_wait = FALSE;
+        nextline=0;
 }
 
 void donothing(int signum) {
