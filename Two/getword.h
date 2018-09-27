@@ -2,9 +2,25 @@
  * CS570 Fall 2018
  * San Diego State University */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+
+#define EOS '\0'
+#define BLANK ' '
+#define NEWLINE '\n'
+#define SEMI ';'
+#define PULL '<'
+#define PUSH '>'
+#define PIPE '|'
+#define TILDE '~'
+#define MONEY '$'
+#define BREAK '\\'
+
 #define STORAGE 255 /* One more than getword()'s maximum wordsize */
+
+
+
 
 int getword(char *w);
 /* (Note: the preceding line is an ANSI C prototype statement for getword().

@@ -6,11 +6,6 @@
  */
 
 #include "getword.h"
-#include <stdio.h>
-#include <string.h>
-#include <strings.h>
-#include <stdlib.h>
-
 #define EOS '\0'
 
 #define BLANK ' '
@@ -28,6 +23,12 @@
 #define IN 1
 #define OUT 0
 
+
+//TODO: DOCUMENT THE SHIT OUTTA THIS.
+//TODO: WE NEED TO SETUP A FLAG TO IGNORE OUR & FLAG.
+//TODO: FIX ALL THESE DEFINES AND TOSS THEM INTO GETWORD.H INSTEAD
+
+extern int f_wait;
 int getword(char * w) {
 
         short c;                 //character from getchar() is stored in here.
@@ -50,6 +51,7 @@ int getword(char * w) {
                                 break;
                         } else if (c == PUSH || c == PIPE || c == WAIT) {
                                 w[letters++] = c;
+                                f_wait++;
                                 break;
                         } else if (c == PULL) {
                                 w[letters++] = c;

@@ -17,6 +17,10 @@ char pull_file[STORAGE];
 char pipe_comm[STORAGE];
 char c_dir[STORAGE];
 
+//TODO: ADD IN GETCHAR A WAY FOR US TO SET A FLAG FOR OUR &.
+//TODO: WE CAN USE "extern int foo;" TO BRING IN A VARIABLE FROM ELSEWHERE.
+//TODO: THAT WAY WE CAN HANDLE THE \& PROPERLY.
+
 int main() {
         /* === Catch Signal === */
         
@@ -139,7 +143,7 @@ int main() {
                                 
                 }
         }
-        killpg(getpgrp(),SIGTERM);
+//        killpg(getpgrp(),SIGTERM);
 
         printf("\np2 terminated.\n");
         exit(0);
@@ -155,11 +159,11 @@ int parse() {
                                 f_terminate++; 
                         break;
                 } 
-        /* Checking for environment variables */
-                if (l < 0) {
+        /* Prog4: Checking for environment variables */
+                if(l < 0) {
                         char *env;
                         if((env = getenv(tmp[i])) == NULL)
-                                strcpy(tmp[i],"Env not found");
+                                strcpy(tmp[i],"INVALID ENV");
                         else 
                                 strcpy(tmp[i],env);
                 }
@@ -193,10 +197,10 @@ int parse() {
         }        
         /* Preparing flags for waiting "&" */
         if(j > 0 && line[j-1] != NULL) {
-                if( strcmp(line[j-1], "&") == 0) {
-                        f_wait++;
+                if(f_wait && strcmp(line[j-1], "&") == 0)
                         j--;
-                }
+                else
+                        f_wait = FALSE;
         } 
         /* End of argument */
         line[j] = NULL;
