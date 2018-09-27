@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include "getword.h"
+#include <errno.h>
 
 #define MAX_ARGS 100
 #define MAX_FILE 100
@@ -15,4 +16,4 @@ int parse();
 void prepare(); //a.k.a init.
 void redirectoutput();
 void redirectinput();
-void donothing(int signum);
+int ismeta(char* s);

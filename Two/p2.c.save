@@ -19,16 +19,14 @@ char c_dir[STORAGE];
 
 int main() {
         /* === Catch Signal === */
-        
-        (void) signal(SIGTERM, SIG_IGN);
-        
-        //struct sigaction sa;
-        //memset(&sa, 0, sizeof(sa));
-        //sa.sa_handler = donothing;
-        //if(sigaction(SIGTERM, &sa, NULL) == -1) {
-        //        perror("sigterm problems");
-        //        exit(1);
-        //}   
+        (void) signal(SIGTERM, donothing);
+        /*struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_handler = donothing;
+        if(sigaction(SIGTERM, &sa, NULL) == -1) {
+                perror("sigterm problems");
+                exit(1);
+        }*/   
         /* === Shell === */
         for(;;) {
                 pid_t childpid;
@@ -50,17 +48,13 @@ int main() {
                 }
                 if(f_push > 1) {
                         errno = 1;
-                        (void) perror("Too many pushes \'>\'");
+                        (void) perror("invalid syntax, too many pushes \'>\'");
                         continue;
                 } 
                 if(f_pull > 1) {
                         errno = 1;
-                        (void) perror("Too many pulls \'<\'");
+                        (void) perror("invalid syntax, too many pulls \'<\'");
                         continue;
-                }
-                if(line[nextline] == NULL) {
-                        errno = 3;
-                        perror("No command found!");
                 }
                 
                 /* === HANDLING BUILTINS ==== */
@@ -107,7 +101,8 @@ int main() {
                                         if((execvp(line[0],line)) == -1) {
                                                 perror("execvp failed!");
                                                 exit(1);
-                                        }
+                                        } else 
+                                                printf("success");
                                         exit(0);
                                 } else {
                                         //Reading from pfd[0]: Grandchild Process.
@@ -115,8 +110,8 @@ int main() {
                                         dup2(pfd[0],STDIN_FILENO);
                                         close(pfd[0]);
 
-                                        pid_t kpid;
-                                        for(; grandchildpid != kpid; kpid = wait(NULL));
+                                        pid_t pid;
+                                        for(;grandchildpid != pid;pid = wait(NULL));
                                 }
                         }
                         
@@ -166,13 +161,11 @@ int parse() {
         /* Catching flags from previous word. */ 
                 if(check && f_push > 0) {
                         check--;
-                        if(!(ismeta(tmp[i])))
-                                strcpy(push_file, tmp[i]);
+                        strcpy(push_file, tmp[i]);
                         continue;
                 } else if (check && f_pull > 0) {
                         check--;
-                        if(!(ismeta(tmp[i])))
-                                strcpy(pull_file, tmp[i]);
+                        strcpy(pull_file, tmp[i]);
                         continue;
                 }
         /* Set flags for the next word or store current word. */
@@ -192,7 +185,7 @@ int parse() {
         
         }        
         /* Preparing flags for waiting "&" */
-        if(j > 0 && line[j-1] != NULL) {
+        if(j > 0) {
                 if( strcmp(line[j-1], "&") == 0) {
                         f_wait++;
                         j--;
@@ -268,10 +261,6 @@ void prepare() {
         nextline=0;
 }
 
-int ismeta(char* s) {
-        if( !(strcmp(s,">")) || !(strcmp(s,"<")) || !(strcmp(s,"|")) || !(strcmp(s,"&")) )
-                return 1;
-        else 
-                return 0;
-        
+void donothing(int signum) {
+
 }
