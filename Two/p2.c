@@ -1,4 +1,28 @@
+/* Miguel Campos
+ * Dr. John Carroll
+ * CS570
+ * 10/05/18
+ * 2.c
+ */
+
 #include "p2.h"
+#include "getword.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/types.h>
+
+#define TERMINATE -255
+#define S_PUSH ">"
+#define S_PULL "<"
+#define S_PIPE "|"
+#define S_WAIT "&"
+#define SUCCESS 0
+#define FAILURE -1
 
 /* ========== GLOBAL BOIS ========== */
 int f_terminate;
@@ -17,78 +41,59 @@ char pull_file[STORAGE];
 char pipe_comm[STORAGE];
 char c_dir[STORAGE];
 
-//TODO: ADD IN GETCHAR A WAY FOR US TO SET A FLAG FOR OUR &.
-//TODO: WE CAN USE "extern int foo;" TO BRING IN A VARIABLE FROM ELSEWHERE.
-//TODO: THAT WAY WE CAN HANDLE THE \& PROPERLY.
-
+//TODO: DOCUMENT & DEFINE THE SHIT OUTTA THIS.
+//TODO: GO THROUGH SPLINT AND FIX EVERYTHING AT THE END.
+//TODO: ARE WE PASSING EVERYTHING? LETS DO SOME REFACTORING
+//      AND CHECK ONCE THE AUTOGRADER IS READY.
 int main() {
-        /* === Catch Signal === */
-        
-        (void) signal(SIGTERM, SIG_IGN);
-        
-        //struct sigaction sa;
-        //memset(&sa, 0, sizeof(sa));
-        //sa.sa_handler = donothing;
-        //if(sigaction(SIGTERM, &sa, NULL) == -1) {
-        //        perror("sigterm problems");
-        //        exit(1);
-        //}   
-        /* === Shell === */
+        /* === Catch Termination Signal === */
+        (void) signal(SIGTERM, donothing);
+        /* === Execute Shell === */
         for(;;) {
+        /* === Preparation === */
                 pid_t childpid;
                 int max;
-                
                 prepare();
-                printf(":cs570: "); fflush(stdout);
-                                        
+                printf(":cs570: ");
                 max = parse();
 
-                /* ==== PREPROCESSING CHECKS ==== */
-                if(f_terminate) break;
-                if(max < 1) {
-                        if(f_push > 0 || f_pull > 0) {
-                                errno = 3;
-                                (void) perror("No command found!");
-                        }
+        /* === Preprocessing === */
+                if(f_terminate) 
+                        break;
+                if(1 > max) {
+                        if(f_push > 0 || f_pull > 0) 
+                                fprintf(stderr, "Invalid Command: No process specified for redirection!\n");
                         continue;
                 }
-                if(f_push > 1) {
-                        errno = 1;
-                        (void) perror("Too many pushes \'>\'");
+                if(1 < f_push) {
+                        fprintf(stderr, "Operation not permitted: Too many output redirections found! [%d]!\n", f_push);
                         continue;
                 } 
-                if(f_pull > 1) {
-                        errno = 1;
-                        (void) perror("Too many pulls \'<\'");
+                if(1 < f_pull) {
+                        fprintf(stderr, "Operation not permitted: Too many input redirections found! [%d]!\n", f_push);
                         continue;
                 }
-                if(line[nextline] == NULL) {
-                        errno = 3;
-                        perror("No command found!");
-                }
-                
-                /* === HANDLING BUILTINS ==== */
-                if(strcmp(line[0],"cd") == 0) {
-                        if(max == 1) line[1] = getenv("HOME");
-                        if(max > 2) {
-                                errno = 7; 
-                                perror("Cannot change directories! cd expected only 1 argument!");
-                        } else if(chdir(line[1]) == -1) 
-                                perror("did not change directory: ");           
-                        
+                if(NULL == line[nextline])
+                        fprintf(stderr, "Invalid Command: No process specified!\n");
+        /* === Handling Built-Ins === */
+                if(SUCCESS == strcmp(line[0],"cd")) {
+                        if(1 == max) 
+                                line[1] = getenv("HOME");
+                        if(2 < max)
+                                fprintf(stderr,"Argument List Too Long: CD only takes 1 argument, you passed [%d] arguments!\n", max);
+                        else if(-1 == chdir(line[1])) 
+                                fprintf(stderr,"Invalid Directory: CD was unable to change directories to [%s]!\n",line[1]);
                         continue;
                 }
-
-                /* ==== EXECUTING CHILDREN ==== */
-                if(-1 == (childpid = fork())) {
-                        perror("unable to create child");
+        /* === Forking Children For Process Execution === */
+                if(FAILURE == (childpid = fork()) ) {
+                        fprintf(stderr, "System Failure: Unable to fork a new child process.");
                         exit(1);
-                } else if( 0 == childpid) {
-                        
+                } else if(SUCCESS == childpid) {
                         redirectinput();
                         redirectoutput();
                         
-                        // CREATING A PIPE HERE AND STUFF
+        /* === Preparing Pipe === */
                         if(f_pipe > 0) {
                                 int pfd[2];
                                 int grandchildpid;
@@ -112,14 +117,15 @@ int main() {
                                                 perror("execvp failed!");
                                                 exit(1);
                                         }
+                                        fflush(stdout); //FFLUSH HERE
                                         exit(0);
                                 } else {
+                                        pid_t kpid;
                                         //Reading from pfd[0]: Grandchild Process.
                                         close(pfd[1]);
                                         dup2(pfd[0],STDIN_FILENO);
                                         close(pfd[0]);
-
-                                        pid_t kpid;
+                                        fflush(stdout);
                                         for(; grandchildpid != kpid; kpid = wait(NULL));
                                 }
                         }
@@ -127,25 +133,27 @@ int main() {
                         // ^ THIS SHOULD TURN INTO A FUNCTION
 
                         if(execvp(line[nextline],line+nextline) == -1) {
-                                perror("execvp failed!");
+                                fprintf(stderr,"cannot execute %s", line[nextline]);
+                               // perror("Cannot execute");
                                 exit(1);
                         }
                         if(f_wait) {
                                 printf("child [%d] done\n", getpid());
                         }
+                        fflush(stdout);
                         exit(0);
                 } else {
                         pid_t pid;
                         if(!f_wait)
                                 for(; (childpid != pid);pid = wait(NULL));
                         else
-                                printf("child [%d]\n", childpid);
+                                printf("%s [%d]\n", line[nextline], childpid);
                                 
                 }
         }
-//        killpg(getpgrp(),SIGTERM);
+        killpg(getpgrp(), SIGTERM);
 
-        printf("\np2 terminated.\n");
+        printf("p2 terminated.\n");
         exit(0);
 }
 
@@ -154,19 +162,18 @@ int parse() {
         int check = 0;
         for(i = 0, j = 0 ; (l = getword(tmp[i])) ; i++) {
         /* Checking for terminating signal */
-                if(l == -255) {
+                if(l == TERMINATE) {
                         if(0 == j)  
                                 f_terminate++; 
                         break;
                 } 
-        /* Prog4: Checking for environment variables */
+        /* Prog4: Checking for environment variables */ 
                 if(l < 0) {
                         char *env;
-                        if((env = getenv(tmp[i])) == NULL)
-                                strcpy(tmp[i],"INVALID ENV");
-                        else 
+                        if((env = getenv(tmp[i])) != NULL)
                                 strcpy(tmp[i],env);
                 }
+        
         /* Catching flags from previous word. */ 
                 if(check && f_push > 0) {
                         check--;
@@ -180,7 +187,7 @@ int parse() {
                         continue;
                 }
         /* Set flags for the next word or store current word. */
-                if (strcmp(tmp[i], ">") == 0) {
+                if (strcmp(tmp[i], S_PUSH) == 0) {
                         f_push++;
                         check++;
                 } else if (strcmp(tmp[i], "<") == 0) {
@@ -216,6 +223,8 @@ void redirectoutput() {
         if(!access(push_file, F_OK)) {
                 strcpy(push_file, "/dev/null");
                 flags = (O_WRONLY);
+                errno = EEXIST;
+                perror("Cannot write to file");
         } else {
                 flags = (O_WRONLY | O_CREAT | O_TRUNC);
         }
@@ -235,6 +244,7 @@ void redirectoutput() {
         }
 }
 void redirectinput() {
+        int in, flags;
     /* Background processes without input specified require */
     /* having their  input redirected to null. */
         if(!f_pull) {
@@ -244,9 +254,8 @@ void redirectinput() {
                         return;
         }
     /* Access the file as read only for input, this also */
-    /* helps prevent accidentally modifying a file. */     
-        int in;
-        int flags = (O_RDONLY);
+    /* helps prevent accidentally modifying a file. */    
+        flags = (O_RDONLY);
         if((in = open(pull_file, flags)) == -1) {
                 perror("unable to open file");
                 exit(1);
@@ -279,3 +288,5 @@ int ismeta(char* s) {
                 return 0;
         
 }
+
+void donothing() { }

@@ -6,20 +6,24 @@
  */
 
 #include "getword.h"
-#define EOS '\0'
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
+#define EOS '\0'
 #define BLANK ' '
 #define NEWLINE '\n'
 #define SEMI ';'
 #define PULL '<'
 #define PUSH '>'
 #define PIPE '|'
-#define WAIT '&'
-
 #define TILDE '~'
 #define MONEY '$'
 #define BREAK '\\'
+#define WAIT '&'
 
+#define TERMINATE -255
 #define IN 1
 #define OUT 0
 
@@ -45,7 +49,7 @@ int getword(char * w) {
                                 state = OUT;
                         } else if (c == EOF) {
                                 w[letters++] = EOS;
-                                multiplier = -255;
+                                multiplier = TERMINATE;
                                 break;
                         } else if (c == NEWLINE || c == SEMI) {
                                 break;
