@@ -14,8 +14,11 @@
 #define FALSE 0
 
 int parse();
-void prepare(); //a.k.a init.
-void redirectoutput();
-void redirectinput();
+void outputmacro();
+void inputmacro();
+void pipemacro();
+void executemacro();
+void dupmacro(int newfd, int oldfd);
+void closemacro(int fd);
 int ismeta(char* s);
 void donothing();

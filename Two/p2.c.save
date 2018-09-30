@@ -50,12 +50,14 @@ int main() {
         (void) signal(SIGTERM, donothing);
         /* === Execute Shell === */
         for(;;) {
+        /* === Preparation === */
                 pid_t childpid;
-                int max = 0;
-                f_push = f_pull = f_pipe = f_wait = f_cdir = nextline = FALSE;
-        /* == Receiving & Validating User Input */
+                int max;
+                prepare();
+        /* === Prompt User for Input === */
                 printf(":cs570: ");
                 max = parse();
+        /* === Preprocessing === */
                 if(f_terminate) 
                         break;
                 if(1 > max) {
@@ -88,10 +90,12 @@ int main() {
                         fprintf(stderr, "System Failure: Unable to fork a new child process.");
                         exit(1);
                 } else if(SUCCESS == childpid) {
+        /* === Redirecting Output & Input & Child === */
                         inputmacro();
                         outputmacro();                      
-                        if(0 < f_pipe)
+                        if(f_pipe > 0)
                                 pipemacro();
+        /* === Executing Child === */
                         executemacro(line[nextline], line+nextline);
                         fflush(stdout);
                         exit(0);
@@ -101,50 +105,33 @@ int main() {
                                 for(; (childpid != pid);pid = wait(NULL));
                         else
                                 printf("%s [%d]\n", line[nextline], childpid);
+                                
                 }
         }
-        /* === Exterminate Remaining Children === */
         killpg(getpgrp(), SIGTERM);
+
         printf("p2 terminated.\n");
         exit(0);
 }
 
-/********************************************************************************
-The parse function scans incoming user text, scans for any environment variables,
-sets global flags for:
-        1) > (push): redirects output towards the specified file.
-        2) < (pull): redirects input from a specified file.
-        3) $ (envr): locates a specific environment varibale.
-        4) | (pipe): creates a pipeline for two processes to share.
-        5) & (wait): sets the execution of a child process to be processed in
-                     the background.
-        6) EOF: terminates a command or the shell if its the only argument.
-The parse function will return its total number of arguments passed.
-
-The parse will scan for any metacharacters or words, if a word is found it will
-be stored in our line. otherwise we will set appropriate flags and proceed to th-
-e next scan. If our previous scan found a metacharacter we will handle the follo-
-wing word depending on what the metacharacter requests.
-        ex: metacharacter > will store the next word in the push_file variable.
-
-********************************************************************************/
 int parse() {
         int i, j, l;
         int check = 0;
         for(i = 0, j = 0 ; (l = getword(tmp[i])) ; i++) {
-                if(TERMINATE == l) {
+        /* Checking for terminating signal */
+                if(l == TERMINATE) {
                         if(0 == j)  
                                 f_terminate++; 
                         break;
                 } 
-        /* We must convert environment variables to strings. */ 
-                if(0 > l) {
+        /* Prog4: Checking for environment variables */ 
+                if(l < 0) {
                         char *env;
                         if((env = getenv(tmp[i])) != NULL)
                                 strcpy(tmp[i],env);
-                }        
-        /* We will store the argument as a file name, but we * 
-         * do not want to handle metacharacters as filenames */
+                }
+        
+        /* Catching flags from previous word. */ 
                 if(check && f_push > 0) {
                         check--;
                         if(!(ismeta(tmp[i])))
@@ -156,47 +143,40 @@ int parse() {
                                 strcpy(pull_file, tmp[i]);
                         continue;
                 }
-        /* We want to warn ourselves if we find a metacharacter to make sure we  *
-         * treat the next word as a special word and do something else. */
-                if (SUCCESS == strcmp(tmp[i], S_PUSH)) {
+        /* Set flags for the next word or store current word. */
+                if (strcmp(tmp[i], S_PUSH) == 0) {
                         f_push++;
                         check++;
-                } else if (SUCCESS == strcmp(tmp[i], S_PULL)) {
+                } else if (strcmp(tmp[i], "<") == 0) {
                         f_pull++;
                         check++;
-                } else if (SUCCESS == strcmp(tmp[i], S_PIPE)) {
+                } else if (strcmp(tmp[i], "|") == 0) {
                         f_pipe++;
                         line[j++] = NULL; 
-                        nextline = j; // Starting location of next command.
+                        nextline = j; //location of the next command.
                 } else {
                         line[j++] = tmp[i];
                 }
         
         }        
-        /* Activating background process flag and placing a  * 
-         * command termination signal at the end accordingly */ 
-        if(j > 0 && (NULL != line[j-1])) {
-                if(f_wait && SUCCESS == strcmp(line[j-1], S_WAIT))
+        /* Preparing flags for waiting "&" */
+        if(j > 0 && line[j-1] != NULL) {
+                if(f_wait && strcmp(line[j-1], "&") == 0)
                         j--;
                 else
                         f_wait = FALSE;
         } 
+        /* End of argument */
         line[j] = NULL;
-        return j;       //Return total line length.
+        return j; // return total line length.
 }
 
-/********************************************************************************
-The output macro is in charge of redirecting user output if the flag is set.
-The output macro will also handle any errors associated with locating, creating,
-opening, and modifying a file. The output macro will replace stdout with a file-
-descriptor of the output file.
-********************************************************************************/
 void outputmacro() {
         int out, flags, permissions;
         if(!f_push) 
                 return;
-    /* We are attempting to see if we can access the specified file
-     * and if it already exists we can ignore it. */
+    /* If the file already exists don't write over it just leave it alone and throw */
+    /* away your output otherwise, go ahead and write to the file that we've found. */
         if(!access(push_file, F_OK)) {
                 strcpy(push_file, "/dev/null");
                 flags = (O_WRONLY);
@@ -214,7 +194,6 @@ void outputmacro() {
         dupmacro(out, STDOUT_FILENO);
         closemacro(out);
 }
-
 void inputmacro() {
         int in, flags;
     /* Background processes without input specified require */
@@ -229,7 +208,7 @@ void inputmacro() {
     /* helps prevent accidentally modifying a file. */    
         flags = (O_RDONLY);
         if((in = open(pull_file, flags)) == -1) {
-                perror("unable to open file");
+                fprintf("No Such File or Directory: cannot open file [%s]!\n", pull_file);
                 exit(1);
         }
         dupmacro(in, STDIN_FILENO);
@@ -237,16 +216,16 @@ void inputmacro() {
 }
 
 void pipemacro() {
-        int pfd[2];
-        int grandchildpid;
+        int pfd[2], grandchildpid;
         if((pipe(pfd)) == -1) {
-                fprintf(stderr, "System Failure: Unable to create pipe!\n");
-                exit(1);
+                perror("unable to create pipe!");
+                exit(10);
         }
         if(-1 == (grandchildpid = fork())) {
-                fprintf(stderr, "System Failure: Unable to fork child!\n");
+                perror("unable to create child");
                 exit(1);
-        } else if(grandchildpid == 0) { //Redirecting output to pfd[1]: parent Process.
+        } else if(grandchildpid == 0) {
+        //Redirecting output to pfd[1]: Parent Process.
                 closemacro(pfd[0]);
                 dupmacro(pfd[1],STDOUT_FILENO);
                 closemacro(pfd[1]);
@@ -254,13 +233,15 @@ void pipemacro() {
                 fflush(stdout);
                 exit(0);
         } else {
-                pid_t kpid; //Reading from pfd[0]: child Process.
+                pid_t kpid;
+                //Reading from pfd[0]: Grandchild Process.
                 closemacro(pfd[1]);
-                dupmacro(pfd[0],STDIN_FILENO);    
+                dupmacro(pfd[0],STDIN_FILENO);
                 closemacro(pfd[0]);
                 fflush(stdout);
                 for(; grandchildpid != kpid; kpid = wait(NULL));
-        } 
+        }
+                        
 }
 
 void executemacro(char *file, char *args[]) {
@@ -270,18 +251,26 @@ void executemacro(char *file, char *args[]) {
         }
 }
 
-void dupmacro(int newfd, int oldfd) {
-        if(dup2(newfd, oldfd) == -1) {
-                fprintf(stderr, "System Failure: unable to set filedescriptors [new: %d, old: %d]!\n", newfd, oldfd);
-                exit(2);
+void closemacro(int fd) {
+        if(close(fd) == -1) {
+                fprintf(stderr,"System Failure: Unable to close filedescriptor [%d]!\n",fd); exit(2);
         }
 }
 
-void closemacro(int fd) {
-        if(close(fd) == -1) {
-                fprintf(stderr, "System Failure: unable to close file descriptor [%d]!\n", fd);
-                exit(1); 
+void dupmacro(int newfd, int oldfd) {
+        if(dup2(newfd, oldfd) == -1) {
+                fprintf(stderr, "System Failure: Unable to set new file descriptors [new: %d, old: %d]!\n", newfd, oldfd);
         }
+}
+
+/* Initializing the shell & next line. */
+void prepare() {
+        f_terminate = FALSE;
+        f_push = FALSE;
+        f_pull = FALSE;
+        f_pipe = FALSE;
+        f_wait = FALSE;
+        nextline=0;
 }
 
 int ismeta(char* s) {
