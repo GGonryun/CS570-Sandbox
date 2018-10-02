@@ -31,6 +31,7 @@ int f_pull;
 int f_pipe;
 int f_wait;
 int f_cdir;
+int f_break;
 int nextline;
 
 /* === CHARACTER AND STRING STORAGE === */
@@ -47,6 +48,7 @@ char c_dir[STORAGE];
 //      AND CHECK ONCE THE AUTOGRADER IS READY.
 int main() {
         /* === Catch Termination Signal === */
+        //TODO: setpgid()
         (void) signal(SIGTERM, donothing);
         /* === Execute Shell === */
         for(;;) {
@@ -104,7 +106,7 @@ int main() {
                 }
         }
         /* === Exterminate Remaining Children === */
-        killpg(getpgrp(), SIGTERM);
+//        killpg(getpgrp(), SIGTERM);
         printf("p2 terminated.\n");
         exit(0);
 }
@@ -131,7 +133,7 @@ wing word depending on what the metacharacter requests.
 int parse() {
         int i, j, l;
         int check = 0;
-        for(i = 0, j = 0 ; (l = getword(tmp[i])) ; i++) {
+        for(i = 0, j = 0; f_break = 0, l = getword(tmp[i]) ; i++) {
                 if(TERMINATE == l) {
                         if(0 == j)  
                                 f_terminate++; 
@@ -157,17 +159,22 @@ int parse() {
                         continue;
                 }
         /* We want to warn ourselves if we find a metacharacter to make sure we  *
-         * treat the next word as a special word and do something else. */
-                if (SUCCESS == strcmp(tmp[i], S_PUSH)) {
+         * treat the next word as a special word and do something else. We only *
+         * care about the LAST & we find so only the last &'s flag will pass.  */
+                f_wait = 0;
+                if (!(f_break) && SUCCESS == strcmp(tmp[i], S_PUSH)) {
                         f_push++;
                         check++;
-                } else if (SUCCESS == strcmp(tmp[i], S_PULL)) {
+                } else if (!(f_break) && SUCCESS == strcmp(tmp[i], S_PULL)) {
                         f_pull++;
                         check++;
-                } else if (SUCCESS == strcmp(tmp[i], S_PIPE)) {
+                } else if (!(f_break) && SUCCESS == strcmp(tmp[i], S_PIPE)) {
                         f_pipe++;
                         line[j++] = NULL; 
                         nextline = j; // Starting location of next command.
+                } else if (!(f_break) && SUCCESS == strcmp(tmp[i], S_WAIT)) {
+                        f_wait++;
+                        line[j++] = tmp[i];              
                 } else {
                         line[j++] = tmp[i];
                 }
@@ -179,8 +186,7 @@ int parse() {
                 if(f_wait && SUCCESS == strcmp(line[j-1], S_WAIT))
                         j--;
                 else
-                        f_wait = FALSE;
-        } 
+                        f_wait = FALSE;}
         line[j] = NULL;
         return j;       //Return total line length.
 }
