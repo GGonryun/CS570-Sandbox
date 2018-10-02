@@ -31,7 +31,6 @@ int f_pull;
 int f_pipe;
 int f_wait;
 int f_cdir;
-int f_break;
 int nextline;
 
 /* === CHARACTER AND STRING STORAGE === */
@@ -48,7 +47,6 @@ char c_dir[STORAGE];
 //      AND CHECK ONCE THE AUTOGRADER IS READY.
 int main() {
         /* === Catch Termination Signal === */
-        //TODO: setpgid()
         (void) signal(SIGTERM, donothing);
         /* === Execute Shell === */
         for(;;) {
@@ -133,7 +131,7 @@ wing word depending on what the metacharacter requests.
 int parse() {
         int i, j, l;
         int check = 0;
-        for(i = 0, j = 0; f_break = 0, l = getword(tmp[i]) ; i++) {
+        for(i = 0, j = 0 ; (l = getword(tmp[i])) ; i++) {
                 if(TERMINATE == l) {
                         if(0 == j)  
                                 f_terminate++; 
@@ -159,22 +157,17 @@ int parse() {
                         continue;
                 }
         /* We want to warn ourselves if we find a metacharacter to make sure we  *
-         * treat the next word as a special word and do something else. We only *
-         * care about the LAST & we find so only the last &'s flag will pass.  */
-                f_wait = 0;
-                if (!(f_break) && SUCCESS == strcmp(tmp[i], S_PUSH)) {
+         * treat the next word as a special word and do something else. */
+                if (SUCCESS == strcmp(tmp[i], S_PUSH)) {
                         f_push++;
                         check++;
-                } else if (!(f_break) && SUCCESS == strcmp(tmp[i], S_PULL)) {
+                } else if (SUCCESS == strcmp(tmp[i], S_PULL)) {
                         f_pull++;
                         check++;
-                } else if (!(f_break) && SUCCESS == strcmp(tmp[i], S_PIPE)) {
+                } else if (SUCCESS == strcmp(tmp[i], S_PIPE)) {
                         f_pipe++;
                         line[j++] = NULL; 
                         nextline = j; // Starting location of next command.
-                } else if (!(f_break) && SUCCESS == strcmp(tmp[i], S_WAIT)) {
-                        f_wait++;
-                        line[j++] = tmp[i];              
                 } else {
                         line[j++] = tmp[i];
                 }
@@ -186,7 +179,8 @@ int parse() {
                 if(f_wait && SUCCESS == strcmp(line[j-1], S_WAIT))
                         j--;
                 else
-                        f_wait = FALSE;}
+                        f_wait = FALSE;
+        } 
         line[j] = NULL;
         return j;       //Return total line length.
 }
@@ -204,9 +198,10 @@ void outputmacro() {
     /* We are attempting to see if we can access the specified file
      * and if it already exists we can ignore it. */
         if(!access(push_file, F_OK)) {
-                flags = (O_WRONLY);
-                fprintf(stderr, "File Already Exists: cannot overwrite [%s]!\n",push_file);
                 strcpy(push_file, "/dev/null");
+                flags = (O_WRONLY);
+                errno = EEXIST;
+                perror("Cannot write to file");
         } else {
                 flags = (O_WRONLY | O_CREAT | O_TRUNC);
         }
@@ -220,12 +215,6 @@ void outputmacro() {
         closemacro(out);
 }
 
-/********************************************************************************
-The input macro is in charge of redirecting user input if the flag is set.
-The input macro will also handle any errors associated with locating, creating,
-opening, and modifying a file. The input macro will replace stdin with a file-
-descriptor of the input file.
-********************************************************************************/
 void inputmacro() {
         int in, flags;
     /* Background processes without input specified require */
@@ -240,31 +229,24 @@ void inputmacro() {
     /* helps prevent accidentally modifying a file. */    
         flags = (O_RDONLY);
         if((in = open(pull_file, flags)) == -1) {
-                fprintf(stderr, "System Failure: We were unable to open the file [%s]\n", pull_file);
+                perror("unable to open file");
                 exit(1);
         }
         dupmacro(in, STDIN_FILENO);
         closemacro(in);
 }
 
-/********************************************************************************
-The pipe macro is in charge of creating a new pipe and connecting processes
-through the pipe. It will also handle any errors related to creating the pipe,
-along with hooking up the processes file descriptors to the pipe.
-        pfd[0] represents the output side of the pipe.
-        pfd[1] represents the input side of the pipe.
-********************************************************************************/
 void pipemacro() {
         int pfd[2];
         int grandchildpid;
-        if(-1 == pipe(pfd)) {
+        if((pipe(pfd)) == -1) {
                 fprintf(stderr, "System Failure: Unable to create pipe!\n");
                 exit(1);
         }
-        if(FAILURE == (grandchildpid = fork())) {
+        if(-1 == (grandchildpid = fork())) {
                 fprintf(stderr, "System Failure: Unable to fork child!\n");
                 exit(1);
-        } else if(SUCCESS == grandchildpid) { //Redirecting output to pfd[1]: parent Process.
+        } else if(grandchildpid == 0) { //Redirecting output to pfd[1]: parent Process.
                 closemacro(pfd[0]);
                 dupmacro(pfd[1],STDOUT_FILENO);
                 closemacro(pfd[1]);

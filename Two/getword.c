@@ -32,7 +32,7 @@
 //TODO: WE NEED TO SETUP A FLAG TO IGNORE OUR & FLAG.
 //TODO: FIX ALL THESE DEFINES AND TOSS THEM INTO GETWORD.H INSTEAD
 
-extern int f_break;
+extern int f_wait;
 int getword(char * w) {
 
         short c;                 //character from getchar() is stored in here.
@@ -40,8 +40,10 @@ int getword(char * w) {
         unsigned short state = OUT;     //storing state.
         signed short multiplier = 1;    //used to determine if '$' was used.
         char *env = getenv("HOME");     //gets current home directory.
+
         while(letters < STORAGE-1) {
                 c = getchar();
+
                 if(state == OUT){
                         if (c == BLANK) {
                                 state = OUT;
@@ -53,7 +55,8 @@ int getword(char * w) {
                                 break;
                         } else if (c == PUSH || c == PIPE || c == WAIT) {
                                 w[letters++] = c;
-                                break; 
+                                f_wait++;
+                                break;
                         } else if (c == PULL) {
                                 w[letters++] = c;
                                 c = getchar();
@@ -86,7 +89,6 @@ int getword(char * w) {
                                 ungetc(c,stdin);
                                 break;
                         } else if (c == BREAK) {
-                                f_break++;
                                 c = getchar();
                                 if(c == NEWLINE) continue;                                
                         }
