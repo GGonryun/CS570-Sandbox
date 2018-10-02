@@ -198,10 +198,9 @@ void outputmacro() {
     /* We are attempting to see if we can access the specified file
      * and if it already exists we can ignore it. */
         if(!access(push_file, F_OK)) {
-                strcpy(push_file, "/dev/null");
                 flags = (O_WRONLY);
-                errno = EEXIST;
-                perror("Cannot write to file");
+                fprintf(stderr, "File Already Exists: cannot overwrite [%s]!\n",push_file);
+                strcpy(push_file, "/dev/null");
         } else {
                 flags = (O_WRONLY | O_CREAT | O_TRUNC);
         }
@@ -215,6 +214,12 @@ void outputmacro() {
         closemacro(out);
 }
 
+/********************************************************************************
+The input macro is in charge of redirecting user input if the flag is set.
+The input macro will also handle any errors associated with locating, creating,
+opening, and modifying a file. The input macro will replace stdin with a file-
+descriptor of the input file.
+********************************************************************************/
 void inputmacro() {
         int in, flags;
     /* Background processes without input specified require */
@@ -229,24 +234,31 @@ void inputmacro() {
     /* helps prevent accidentally modifying a file. */    
         flags = (O_RDONLY);
         if((in = open(pull_file, flags)) == -1) {
-                perror("unable to open file");
+                fprintf(stderr, "System Failure: We were unable to open the file [%s]\n", pull_file);
                 exit(1);
         }
         dupmacro(in, STDIN_FILENO);
         closemacro(in);
 }
 
+/********************************************************************************
+The pipe macro is in charge of creating a new pipe and connecting processes
+through the pipe. It will also handle any errors related to creating the pipe,
+along with hooking up the processes file descriptors to the pipe.
+        pfd[0] represents the output side of the pipe.
+        pfd[1] represents the input side of the pipe.
+********************************************************************************/
 void pipemacro() {
         int pfd[2];
         int grandchildpid;
-        if((pipe(pfd)) == -1) {
+        if(-1 == pipe(pfd)) {
                 fprintf(stderr, "System Failure: Unable to create pipe!\n");
                 exit(1);
         }
-        if(-1 == (grandchildpid = fork())) {
+        if(FAILURE == (grandchildpid = fork())) {
                 fprintf(stderr, "System Failure: Unable to fork child!\n");
                 exit(1);
-        } else if(grandchildpid == 0) { //Redirecting output to pfd[1]: parent Process.
+        } else if(SUCCESS == grandchildpid) { //Redirecting output to pfd[1]: parent Process.
                 closemacro(pfd[0]);
                 dupmacro(pfd[1],STDOUT_FILENO);
                 closemacro(pfd[1]);
