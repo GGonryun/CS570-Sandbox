@@ -1,0 +1,49 @@
+Most Useful: 
+1) http://www.cs.loyola.edu/~jglenn/702/S2005/Examples/dup2.html
+2) https://robots.thoughtbot.com/input-output-redirection-in-the-shell
+
+linux error codes:
+http://www.virtsync.com/c-error-codes-include-errno
+
+pointers & stuff:
+1) https://wiki.sei.cmu.edu/confluence/display/c/STR05-C.+Use+pointers+to+const+when+referring+to+string+literals
+2) https://www.geeksforgeeks.org/few-bytes-on-null-pointer-in-c/
+
+exit(): 
+1) https://stackoverflow.com/questions/2425167/use-of-exit-function
+
+close(): 
+1) http://pubs.opengroup.org/onlinepubs/009696899/functions/close.html
+
+dup2(): 
+1) https://stackoverflow.com/questions/14846768/in-c-how-do-i-redirect-stdout-fileno-to-dev-null-using-dup2-and-then-redirect
+2) https://linux.die.net/man/2/dup2
+3) https://unix.stackexchange.com/questions/119648/redirecting-to-dev-null
+
+access():
+https://stackoverflow.com/questions/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+
+open():
+https://www.gsp.com/cgi-bin/man.cgi?section=2&topic=open
+
+pipe():
+1) https://linux.die.net/man/2/pipe
+2) https://www.tldp.org/LDP/lpg/node11.html
+3) https://www.tldp.org/LDP/lpg/node11.html
+
+pgid(), sigterm, killpg(), sigaction():
+1) http://man7.org/linux/man-pages/man2/setpgid.2.html
+2) ftp://ftp.gnu.org/old-gnu/Manuals/glibc-2.2.3/html_chapter/libc_24.html
+3) http://man7.org/linux/man-pages/man2/sigaction.2.html
+4) https://www.mkssoftware.com/docs/man3/setpgid.3.asp
+
+getenv():
+1) http://www0.cs.ucl.ac.uk/staff/ucacbbl/getenv/
+2) http://man7.org/linux/man-pages/man3/getenv.3.html
+
+multipiping():
+1) https://stackoverflow.com/questions/17630247/coding-multiple-pipe-in-c/17631589
+
+derailed to add fancy funtionality:
+further understanding of pointers: https://stackoverflow.com/questions/6639256/pointer-to-first-element-in-array-c
+how to fetch current working directory: https://stackoverflow.com/questions/6639256/pointer-to-first-element-in-array-c
